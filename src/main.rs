@@ -6,7 +6,7 @@ fn main() {
 mod tests {
     use std::time::Duration;
 
-    use sqlx::{Connection, Error, PgConnection, Pool, Postgres, postgres::PgPoolOptions};
+    use sqlx::{Connection, Error, PgConnection, Pool, Postgres, Row, postgres::PgPoolOptions};
     use uuid::Uuid;
 
     async fn get_pool() -> Result<Pool<Postgres>, Error> {
@@ -59,6 +59,26 @@ mod tests {
             .bind("Sample description")
             .execute(&pool)
             .await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_fetch_optional() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let result = sqlx::query("SELECT * FROM category WHERE id = $1")
+            .bind("A")
+            .fetch_optional(&pool)
+            .await?;
+
+        if let Some(row) = result {
+            let id: String = row.get("id");
+            let name: String = row.get("name");
+            let description: String = row.get("description");
+            println!("id: {}, name: {}, description: {}", id, name, description);
+        } else {
+            println!("data is not found");
+        }
+
         Ok(())
     }
 }
