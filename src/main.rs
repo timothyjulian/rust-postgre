@@ -48,4 +48,17 @@ mod tests {
         .await?;
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_prepare_statement() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let my_uuid = Uuid::new_v4();
+        sqlx::query("INSERT INTO category(id, name, description) VALUES($1, $2, $3);")
+            .bind(my_uuid.to_string())
+            .bind("Sample name")
+            .bind("Sample description")
+            .execute(&pool)
+            .await?;
+        Ok(())
+    }
 }
