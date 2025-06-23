@@ -33,4 +33,11 @@ mod tests {
         pool.close().await;
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_execute() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        sqlx::query("insert into category(id, name, description) VALUES('A', 'Sample', 'Sample');").execute(&pool).await?;
+        Ok(())
+    }
 }
