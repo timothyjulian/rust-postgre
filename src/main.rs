@@ -6,7 +6,8 @@ fn main() {
 mod tests {
     use std::time::Duration;
 
-    use sqlx::{postgres::PgPoolOptions, Connection, Error, PgConnection, PgPool, Pool, Postgres};
+    use sqlx::{Connection, Error, PgConnection, Pool, Postgres, postgres::PgPoolOptions};
+    use uuid::Uuid;
 
     async fn get_pool() -> Result<Pool<Postgres>, Error> {
         let url = "postgres://timy:@localhost:5432/rust_test";
@@ -15,7 +16,8 @@ mod tests {
             .min_connections(5)
             .acquire_timeout(Duration::from_secs(5))
             .idle_timeout(Duration::from_secs(60))
-            .connect(url).await
+            .connect(url)
+            .await
     }
 
     #[tokio::test]
@@ -37,7 +39,13 @@ mod tests {
     #[tokio::test]
     async fn test_execute() -> Result<(), Error> {
         let pool = get_pool().await?;
-        sqlx::query("insert into category(id, name, description) VALUES('A', 'Sample', 'Sample');").execute(&pool).await?;
+        let my_uuid = Uuid::new_v4();
+        sqlx::query(&format!(
+            "INSERT INTO category(id, name, description) VALUES('{}', 'Sample', 'Sample');",
+            my_uuid
+        ))
+        .execute(&pool)
+        .await?;
         Ok(())
     }
 }
