@@ -81,4 +81,22 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_fetch_one() -> Result<(), Error> {
+        // will throw if not found
+        let pool = get_pool().await?;
+        let result = sqlx::query("SELECT * FROM category WHERE id = $1")
+            .bind("A")
+            .fetch_one(&pool)
+            .await?;
+
+        let id: String = result.get("id");
+        let name: String = result.get("name");
+        let description: String = result.get("description");
+
+        println!("id: {}, name: {}, description: {}", id, name, description);
+
+        Ok(())
+    }
 }
