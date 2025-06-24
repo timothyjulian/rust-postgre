@@ -99,4 +99,23 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_fetch_all() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let result = sqlx::query("SELECT * FROM category WHERE id = $1")
+            .bind("C")
+            .fetch_all(&pool)
+            .await?;
+
+        for row in result {
+            let id: String = row.get("id");
+            let name: String = row.get("name");
+            let description: String = row.get("description");
+
+            println!("id: {}, name: {}, description: {}", id, name, description);
+        }
+
+        Ok(())
+    }
 }
