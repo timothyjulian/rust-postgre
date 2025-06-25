@@ -33,10 +33,12 @@ async fn get_pool() -> Result<Pool<Postgres>, Error> {
 #[cfg(test)]
 mod test {
 
-    use chrono::Local;
+    use chrono::{DateTime, Local, Utc};
     use sqlx::{Error, Row, postgres::PgRow};
+    use uuid::Uuid;
 
     use crate::result_mapping::{Brand, Category, get_pool};
+
 
     #[tokio::test]
     async fn test_result_mapping() -> Result<(), Error> {
@@ -94,6 +96,35 @@ mod test {
         for brand in result {
             println!("{:?}", brand);
         }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_transaction() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let my_uuid = Uuid::new_v4();
+
+        let mut transaction = pool.begin().await?;
+
+        sqlx::query("INSERT INTO brands (id, name, description, created_at, updated_at) values ($1, $2, $3, $4, $5)")
+        .bind(my_uuid.to_string())
+        .bind("Contoh")
+        .bind("Contoh Deskripsi")
+        .bind(Local::now().naive_local())
+        .bind(Local::now().naive_local())
+        .execute(&mut *transaction).await?;
+
+        let my_uuid2 = Uuid::new_v4();
+        sqlx::query("INSERT INTO brands (id, name, description, created_at, updated_at) values ($1, $2, $3, $4, $5)")
+        .bind(my_uuid2.to_string())
+        .bind("Contoh")
+        .bind("Contoh Deskripsi")
+        .bind(Local::now().naive_local())
+        .bind(Local::now().naive_local())
+        .execute(&mut *transaction).await?;
+
+        transaction.commit().await?;
 
         Ok(())
     }
