@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use sqlx::{postgres::PgPoolOptions, Error, Pool, Postgres};
+use sqlx::{Error, FromRow, Pool, Postgres, postgres::PgPoolOptions};
 
-#[derive(Debug)]
+#[derive(FromRow, Debug)]
 struct Category {
     id: String,
     name: String,
-    description: String
+    description: String,
 }
 
 async fn get_pool() -> Result<Pool<Postgres>, Error> {
@@ -20,25 +20,39 @@ async fn get_pool() -> Result<Pool<Postgres>, Error> {
         .await
 }
 
-
 #[cfg(test)]
 mod test {
-    use sqlx::{postgres::PgRow, Row, Error};
+    use std::result;
 
-    use crate::result_mapping::{get_pool, Category};
+    use sqlx::{Error, Row, postgres::PgRow};
 
+    use crate::result_mapping::{Category, get_pool};
 
     #[tokio::test]
     async fn test_result_mapping() -> Result<(), Error> {
         let pool = get_pool().await?;
-        let result = sqlx::query("SELECT * FROM category").map(|row: PgRow| {
-            Category {
+        let result = sqlx::query("SELECT * FROM category")
+            .map(|row: PgRow| Category {
                 id: row.get("id"),
                 name: row.get("name"),
-                description: row.get("description")
-            }
-        })
-        .fetch_all(&pool).await?;
+                description: row.get("description"),
+            })
+            .fetch_all(&pool)
+            .await?;
+
+        for category in result {
+            println!("{:?}", category);
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_auto_result_mapping() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let result: Vec<Category> = sqlx::query_as("SELECT * FROM category")
+            .fetch_all(&pool)
+            .await?;
 
         for category in result {
             println!("{:?}", category);

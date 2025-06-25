@@ -1,4 +1,3 @@
-
 mod result_mapping;
 
 fn main() {
@@ -122,9 +121,9 @@ mod tests {
 
         Ok(())
     }
-    
+
     #[tokio::test]
-    async fn test_fetch_stream() -> Result<(), Error>{
+    async fn test_fetch_stream() -> Result<(), Error> {
         let pool = get_pool().await?;
         let mut result = sqlx::query("SELECT * FROM category").fetch(&pool);
 
