@@ -6,6 +6,7 @@ fn main() {
 mod tests {
     use std::time::Duration;
 
+    use futures::TryStreamExt;
     use sqlx::{Connection, Error, PgConnection, Pool, Postgres, Row, postgres::PgPoolOptions};
     use uuid::Uuid;
 
@@ -113,6 +114,21 @@ mod tests {
             let name: String = row.get("name");
             let description: String = row.get("description");
 
+            println!("id: {}, name: {}, description: {}", id, name, description);
+        }
+
+        Ok(())
+    }
+    
+    #[tokio::test]
+    async fn test_fetch_stream() -> Result<(), Error>{
+        let pool = get_pool().await?;
+        let mut result = sqlx::query("SELECT * FROM category").fetch(&pool);
+
+        while let Some(row) = result.try_next().await? {
+            let id: String = row.get("id");
+            let name: String = row.get("name");
+            let description: String = row.get("description");
             println!("id: {}, name: {}, description: {}", id, name, description);
         }
 
