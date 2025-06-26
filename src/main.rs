@@ -136,4 +136,16 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_auto_increment() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let result = sqlx::query("INSERT INTO sellers(name) VALUES ($1) RETURNING id")
+        .bind("Contoh").fetch_one(&pool).await?;
+
+        let id: i32 = result.get("id");
+        println!("id: {}", id);
+        
+        Ok(())
+    }
 }
