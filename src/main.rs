@@ -8,8 +8,9 @@ fn main() {
 mod tests {
     use std::time::Duration;
 
+    use chrono::Local;
     use futures::TryStreamExt;
-    use sqlx::{Connection, Error, PgConnection, Pool, Postgres, Row, postgres::PgPoolOptions};
+    use sqlx::{postgres::PgPoolOptions, Connection, Error, PgConnection, Pool, Postgres, Row, Transaction};
     use uuid::Uuid;
 
     async fn get_pool() -> Result<Pool<Postgres>, Error> {
@@ -133,6 +134,34 @@ mod tests {
             let description: String = row.get("description");
             println!("id: {}, name: {}, description: {}", id, name, description);
         }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_transaction() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let my_uuid = Uuid::new_v4();
+
+        let mut transaction = pool.begin().await?;
+
+        sqlx::query("INSERT INTO brands (id, name, description, created_at, updated_at) values ($1, $2, $3, $4, $5)")
+        .bind(my_uuid.to_string())
+        .bind("Contoh")
+        .bind("Contoh Deskripsi")
+        .bind(Local::now().naive_local())
+        .bind(Local::now().naive_local())
+        .execute(&mut *transaction).await?;
+
+        let my_uuid2 = Uuid::new_v4();
+        sqlx::query("INSERT INTO brands (id, name, description, created_at, updated_at) values ($1, $2, $3, $4, $5)")
+        .bind(my_uuid2.to_string())
+        .bind("Contoh")
+        .bind("Contoh Deskripsi")
+        .bind(Local::now().naive_local())
+        .bind(Local::now().naive_local())
+        .execute(&mut *transaction).await?;
+
+        transaction.commit().await?;
 
         Ok(())
     }
@@ -146,6 +175,26 @@ mod tests {
         let id: i32 = result.get("id");
         println!("id: {}", id);
         
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_auto_increment_with_transaction() -> Result<(), Error> {
+        let pool = get_pool().await?;
+        let mut transaction: Transaction<Postgres> = pool.begin().await?;
+        
+        sqlx::query("INSERT INTO sellers(name) VALUES ($1)")
+        .bind("Contoh")
+        .execute(&mut *transaction).await?;
+
+        let result = sqlx::query("SELECT LASTVAL() AS id")
+        .fetch_one(&mut *transaction).await?;
+
+        let id: i32 = result.get_unchecked("id");
+        println!("id: {}", id);
+
+        transaction.commit().await?;
+
         Ok(())
     }
 }
